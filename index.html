@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健康数据报告 — 陈晓波</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --card: #13131a;
+  --border: #1e1e2a;
+  --text: #e0e0e8;
+  --text2: #8888a0;
+  --accent: #4f8cff;
+  --green: #34d399;
+  --red: #f87171;
+  --orange: #fbbf24;
+  --purple: #a78bfa;
+  --pink: #f472b6;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; line-height:1.6; }
+.container { max-width:1200px; margin:0 auto; padding:20px; }
+h1 { font-size:2em; margin-bottom:4px; }
+.subtitle { color:var(--text2); margin-bottom:30px; font-size:0.95em; }
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-bottom:30px; }
+.kpi { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; text-align:center; }
+.kpi .value { font-size:2.2em; font-weight:700; }
+.kpi .label { color:var(--text2); font-size:0.85em; margin-top:4px; }
+.kpi .trend { font-size:0.8em; margin-top:2px; }
+.trend.up { color:var(--green); }
+.trend.down { color:var(--red); }
+.trend.neutral { color:var(--text2); }
+.section { margin-bottom:36px; }
+.section h2 { font-size:1.3em; margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.chart-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(500px,1fr)); gap:20px; }
+.chart-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; }
+.chart-card h3 { font-size:1em; color:var(--text2); margin-bottom:12px; }
+canvas { width:100%!important; }
+.workout-table { width:100%; border-collapse:collapse; }
+.workout-table th, .workout-table td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
+.workout-table th { color:var(--text2); font-weight:500; font-size:0.85em; text-transform:uppercase; }
+.workout-table tr:hover { background:rgba(79,140,255,0.05); }
+.badge { display:inline-block; padding:2px 10px; border-radius:12px; font-size:0.8em; font-weight:600; }
+.badge-walk { background:rgba(52,211,153,0.15); color:var(--green); }
+.badge-cycle { background:rgba(79,140,255,0.15); color:var(--accent); }
+.badge-run { background:rgba(248,113,113,0.15); color:var(--red); }
+.badge-hike { background:rgba(251,191,36,0.15); color:var(--orange); }
+.badge-other { background:rgba(167,139,250,0.15); color:var(--purple); }
+.ring-section { display:flex; gap:20px; flex-wrap:wrap; justify-content:center; }
+.ring-item { text-align:center; width:180px; }
+.ring-circle { width:120px; height:120px; margin:0 auto 10px; position:relative; }
+.ring-circle svg { transform:rotate(-90deg); }
+.ring-pct { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:1.5em; font-weight:700; }
+.insights { background:linear-gradient(135deg,rgba(79,140,255,0.08),rgba(167,139,250,0.08)); border:1px solid rgba(79,140,255,0.2); border-radius:16px; padding:24px; }
+.insights h2 { border:none; padding:0; margin-bottom:12px; }
+.insights ul { list-style:none; }
+.insights li { padding:6px 0; padding-left:24px; position:relative; }
+.insights li::before { content:'→'; position:absolute; left:0; color:var(--accent); }
+.footer { text-align:center; color:var(--text2); font-size:0.8em; padding:30px 0; }
+@media(max-width:600px) {
+  .chart-grid { grid-template-columns:1fr; }
+  .kpi-grid { grid-template-columns:repeat(2,1fr); }
+  h1 { font-size:1.5em; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🏥 健康数据报告</h1>
+  <p class="subtitle">陈晓波 · 男 · 43岁 · 数据范围 2014-09-20 至 2026-03-28 · 327万条记录 · 400次运动</p>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="value" style="color:var(--accent)">25,197</div>
+      <div class="label">7日平均步数</div>
+      <div class="trend up">↑ 30日均值 26,325</div>
+    </div>
+    <div class="kpi">
+      <div class="value" style="color:var(--red)">65</div>
+      <div class="label">7日平均静息心率</div>
+      <div class="trend up">优于年初 (71)</div>
+    </div>
+    <div class="kpi">
+      <div class="value" style="color:var(--green)">41ms</div>
+      <div class="label">7日平均HRV</div>
+      <div class="trend neutral">正常范围</div>
+    </div>
+    <div class="kpi">
+      <div class="value" style="color:var(--purple)">7.4h</div>
+      <div class="label">7日平均睡眠</div>
+      <div class="trend up">达标 ✓</div>
+    </div>
+    <div class="kpi">
+      <div class="value" style="color:var(--orange)">36.8</div>
+      <div class="label">最新VO2Max</div>
+      <div class="trend up">↑ 从27.5持续提升</div>
+    </div>
+    <div class="kpi">
+      <div class="value" style="color:var(--pink)">400</div>
+      <div class="label">累计运动次数</div>
+      <div class="trend neutral">11年数据</div>
+    </div>
+  </div>
+
+  <!-- Health Insights -->
+  <div class="section insights">
+    <h2>💡 健康洞察</h2>
+    <ul>
+      <li><strong>步数优秀</strong> — 日均25,000+步远超WHO建议(8,000步)，运动量充足</li>
+      <li><strong>VO2Max显著提升</strong> — 从2024年7月的27.5升至当前36.8 (+34%)，心肺功能改善明显。2025年10月起快速提升，与步数增加高度吻合</li>
+      <li><strong>静息心率下降</strong> — 从2024年的~73降至目前65，心血管健康改善</li>
+      <li><strong>睡眠基本达标</strong> — 近期平均7.4小时，偶有波动(5.9-15.4h)，建议保持规律作息</li>
+      <li><strong>HRV偏低需关注</strong> — 平均41ms处于同龄偏低水平(参考值40-60ms)，提示自主神经系统恢复空间不足，建议增加放松活动</li>
+      <li><strong>活动圆环完成率低</strong> — 运动环仅14%，站立环33%，建议设定更合理的目标或增加关注</li>
+      <li><strong>运动多样性可提高</strong> — 73%为步行，可增加游泳、力量训练等交叉训练</li>
+    </ul>
+  </div>
+
+  <!-- Steps & Distance -->
+  <div class="section">
+    <h2>🚶 每日步数 (近90天)</h2>
+    <div class="chart-card">
+      <canvas id="stepsChart" height="250"></canvas>
+    </div>
+  </div>
+
+  <!-- Heart Rate -->
+  <div class="section">
+    <h2>❤️ 心率指标</h2>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>静息心率 (近90天)</h3>
+        <canvas id="hrChart" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>心率变异性 HRV (近90天)</h3>
+        <canvas id="hrvChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- VO2Max -->
+  <div class="section">
+    <h2>🫁 VO2Max 心肺耐力趋势</h2>
+    <div class="chart-card">
+      <canvas id="vo2Chart" height="250"></canvas>
+    </div>
+  </div>
+
+  <!-- Sleep -->
+  <div class="section">
+    <h2>😴 睡眠时长 (近90天)</h2>
+    <div class="chart-card">
+      <canvas id="sleepChart" height="250"></canvas>
+    </div>
+  </div>
+
+  <!-- Monthly Trends -->
+  <div class="section">
+    <h2>📊 月度趋势 (2024-2026)</h2>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>月均步数</h3>
+        <canvas id="monthStepsChart" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>月均运动时间 (分钟)</h3>
+        <canvas id="monthExerciseChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity Rings -->
+  <div class="section">
+    <h2>⭕ 活动圆环完成率 (1711天)</h2>
+    <div class="ring-section" id="rings"></div>
+  </div>
+
+  <!-- Workouts -->
+  <div class="section">
+    <h2>🏋️ 运动统计</h2>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>运动类型分布</h3>
+        <canvas id="workoutPie" height="250"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>各类型累计时长 (小时)</h3>
+        <canvas id="workoutBar" height="250"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Workouts -->
+  <div class="section">
+    <h2>📋 近期运动记录</h2>
+    <div class="chart-card" style="overflow-x:auto;">
+      <table class="workout-table" id="workoutTable"></table>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>📱 数据来源: Apple Health · 导出日期 2026-03-28 · 由 Sky ☁️ (OpenClaw AI) 分析生成</p>
+    <p>⚠️ 本报告仅供参考，不构成医疗建议。如有健康问题请咨询医生。</p>
+  </div>
+</div>
+
+<script>
+// === DATA ===
+const D = {"dates_90":["2025-12-29","2025-12-30","2025-12-31","2026-01-01","2026-01-02","2026-01-03","2026-01-04","2026-01-05","2026-01-06","2026-01-07","2026-01-08","2026-01-09","2026-01-10","2026-01-11","2026-01-12","2026-01-13","2026-01-14","2026-01-15","2026-01-16","2026-01-17","2026-01-18","2026-01-19","2026-01-20","2026-01-21","2026-01-22","2026-01-23","2026-01-24","2026-01-25","2026-01-26","2026-01-27","2026-01-28","2026-01-29","2026-01-30","2026-01-31","2026-02-01","2026-02-02","2026-02-03","2026-02-04","2026-02-05","2026-02-06","2026-02-07","2026-02-08","2026-02-09","2026-02-10","2026-02-11","2026-02-12","2026-02-13","2026-02-14","2026-02-15","2026-02-16","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-02-21","2026-02-22","2026-02-23","2026-02-24","2026-02-25","2026-02-26","2026-02-27","2026-02-28","2026-03-01","2026-03-02","2026-03-03","2026-03-04","2026-03-05","2026-03-06","2026-03-07","2026-03-08","2026-03-09","2026-03-10","2026-03-11","2026-03-12","2026-03-13","2026-03-14","2026-03-15","2026-03-16","2026-03-17","2026-03-18","2026-03-19","2026-03-20","2026-03-21","2026-03-22","2026-03-23","2026-03-24","2026-03-25","2026-03-26","2026-03-27","2026-03-28"],
+"steps_90":[15791,30792,15168,12276,9400,23333,11645,22076,21568,22263,25236,24448,30284,27627,29429,33818,24112,28441,35380,24749,18865,14902,27208,28560,21967,28658,26142,14975,29154,31967,14551,28385,26570,31884,31754,35547,37292,37374,40559,34040,20511,17079,18437,18512,39754,20493,28201,26551,32188,25740,17543,20457,10477,21593,27562,7832,16825,18407,22285,28797,21695,22844,27440,28690,25292,19720,30927,13406,26465,20758,24995,23571,23757,21589,24192,27822,21347,30843,37693,43420,30072,25816,41029,26458,33289,17749,29582,36962,25025,7316],
+"hr_90":[63,59,71,63,58,63,71,69,72,71,64,63,62,71,60,61,63,60,61,60,59,62,64,61,64,63,66,60,62,59,68,63,65,58,54,63,65,66,62,60,63,59,74,64,61,59,62,63,66,65,62,66,59,63,73,61,65,63,64,71,75,71,63,65,62,69,67,63,64,65,68,65,67,73,75,64,58,63,65,63,66,67,67,65,66,64,66,65,63,0],
+"hrv_90":[37.4,43,31.5,36.1,63.1,51.2,82.8,51.3,54.7,47.2,44.1,60.3,50.8,55.9,45.6,42.6,43.8,54.8,39.7,43.8,60,50,50,50.5,47.5,40.9,39,48.8,37.4,37.3,46.1,53.4,53.2,49.6,39.4,58.5,36.1,39.5,47.6,65.3,57.8,45.1,34.9,43.1,58.6,48.1,39.5,40.6,43.6,68.1,67.1,42.3,54.6,55.7,42.6,42.2,34.1,42.3,47.1,58.1,35.1,31.7,35.8,45.8,45,40,52.7,52.3,33.3,44.3,57,48.5,42.8,34.2,42.8,29.5,45.4,50.6,33.4,51.4,38.8,43.3,44.6,25.4,50.9,40.5,41,43.8,44.3,0],
+"sleep_90":[7.4,8.5,6.1,3.6,7.6,6.8,6.5,6.9,6.4,7.3,6.7,6.1,0,0,0,0,7.7,7.6,0,0,12.5,0,0,0,0,6.2,5,0,0,7,6.9,0,0,0,0,8.1,0,7.4,7.2,6.9,8.2,7.8,6.7,7,7.6,13.4,12.9,5.4,7,6.4,7.2,6,7.6,7.7,5.9,0,6.8,7.1,6.5,7.4,6,7.1,7.2,7.9,7.7,5.7,7.6,7.5,6.1,0,0,7.6,6.1,7.7,5.7,0,7.9,7.1,13.3,15.4,7.1,7.3,6.9,0,6.4,7.1,9.8,7.6,5.9,0],
+"months":["2024-01","2024-02","2024-03","2024-04","2024-05","2024-06","2024-07","2024-08","2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12","2026-01","2026-02","2026-03"],
+"m_steps":[12570,18578,16617,14649,13359,14124,13385,14862,12560,9011,12752,15289,9715,10281,11435,10640,14115,21301,19514,20262,17255,32286,25885,26601,24189,25012,26615],
+"m_rhr":[72,69.2,66,68.4,70.8,69.3,73.3,75,69.5,73.6,73.3,74.8,71.5,73.5,74.5,72.7,70.1,71.6,70.2,66.3,66,63.8,65.6,71.1,63.4,64.2,65.5],
+"m_exercise":[7.5,21.4,22.4,18,13.8,10.3,14.3,12.9,16.5,8.8,13.4,14.6,7.7,6.4,9.1,7.5,11,70.5,102.6,14.1,10.5,78.5,48.1,24.3,22.9,37.3,45.7],
+"vo2_dates":["2024-07-25","2024-08-02","2024-08-17","2024-09-02","2024-09-08","2024-09-15","2024-09-20","2024-09-26","2024-09-27","2024-10-21","2024-11-06","2024-11-08","2024-11-10","2024-11-13","2024-11-15","2024-11-22","2024-12-01","2024-12-03","2024-12-04","2024-12-08","2024-12-13","2025-01-06","2025-01-08","2025-01-28","2025-02-01","2025-02-24","2025-03-01","2025-03-04","2025-03-08","2025-03-10","2025-03-24","2025-03-27","2025-04-03","2025-04-28","2025-04-29","2025-05-09","2025-05-24","2025-06-03","2025-06-14","2025-06-17","2025-06-18","2025-06-19","2025-06-21","2025-06-22","2025-06-24","2025-06-28","2025-06-29","2025-07-04","2025-07-13","2025-07-20","2025-07-26","2025-08-23","2025-08-31","2025-09-07","2025-09-24","2025-10-01","2025-10-02","2025-10-05","2025-10-06","2025-10-09","2025-10-10","2025-10-16","2025-10-17","2025-10-21","2025-10-27","2025-10-28","2025-10-29","2025-10-30","2025-11-02","2025-11-04","2025-11-07","2025-11-08","2025-11-09","2025-11-11","2025-11-20","2025-11-21","2025-11-24","2025-12-02","2025-12-25","2025-12-30","2025-12-31","2026-01-08","2026-01-11","2026-01-27","2026-01-31","2026-02-03","2026-02-11","2026-02-13","2026-02-14","2026-02-15","2026-02-16","2026-02-17","2026-03-01","2026-03-05","2026-03-07","2026-03-08","2026-03-14","2026-03-19","2026-03-23","2026-03-28"],
+"vo2_vals":[27.5,27.5,27.1,26.9,27.6,30,30,29.2,29.5,27.4,27.8,28.4,29.2,28.7,28.6,28.6,28.9,30.3,31,31,31.2,30.3,30.3,30.9,30.9,30.8,30.9,30.8,30.8,30.8,30.8,31.3,31.8,31.8,32.6,33.5,32.1,32.2,31.6,31.5,31.7,32.4,32.9,32.5,32.5,32.7,32.7,32.9,33.3,32.9,32.9,31.9,32.3,32.3,33.2,34,34.3,35.6,36,37,37,37,37.1,36.9,37,37.1,37.4,37.1,37.3,37.1,37.3,37.3,37.4,37.8,37.6,37.6,37.6,37.3,36,34.9,34.9,35,35.2,36.1,36.5,36.4,35.7,35.7,36.1,36.5,36.2,36.7,36.1,36.5,36.7,36.5,37,35.7,36.3,36.8],
+"workout_types":{"Cycling":{"count":65,"total_duration":4318},"Walking":{"count":292,"total_duration":9748},"Running":{"count":25,"total_duration":1376},"Hiking":{"count":14,"total_duration":1265},"HighIntensityIntervalTraining":{"count":1,"total_duration":165},"Other":{"count":2,"total_duration":44},"Soccer":{"count":1,"total_duration":43}},
+"ring_closure":{"move":120,"exercise":247,"stand":565,"total":1711}
+};
+
+const labels90 = D.dates_90.map(d => d.slice(5)); // MM-DD
+const monthLabels = D.months.map(m => m);
+const chartOpts = {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#666',maxTicksToShown:15,maxRotation:45},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'#666'},grid:{color:'rgba(255,255,255,0.06)'}}}};
+
+// Steps Chart
+new Chart(document.getElementById('stepsChart'), {
+  type:'bar', data:{labels:labels90, datasets:[{data:D.steps_90, backgroundColor:D.steps_90.map(v=>v>30000?'rgba(52,211,153,0.7)':v>20000?'rgba(79,140,255,0.6)':'rgba(79,140,255,0.3)'), borderRadius:3}]},
+  options:{...chartOpts, plugins:{...chartOpts.plugins, tooltip:{callbacks:{label:c=>`${c.raw.toLocaleString()} 步`}}}, scales:{...chartOpts.scales, y:{...chartOpts.scales.y, beginAtZero:true}}}
+});
+
+// Resting HR
+new Chart(document.getElementById('hrChart'), {
+  type:'line', data:{labels:labels90, datasets:[{data:D.hr_90.map(v=>v||null), borderColor:'#f87171', backgroundColor:'rgba(248,113,113,0.1)', fill:true, tension:0.3, pointRadius:1}]},
+  options:{...chartOpts, scales:{...chartOpts.scales, y:{...chartOpts.scales.y, min:50, max:80}}}
+});
+
+// HRV
+new Chart(document.getElementById('hrvChart'), {
+  type:'line', data:{labels:labels90, datasets:[{data:D.hrv_90.map(v=>v||null), borderColor:'#34d399', backgroundColor:'rgba(52,211,153,0.1)', fill:true, tension:0.3, pointRadius:1}]},
+  options:{...chartOpts, scales:{...chartOpts.scales, y:{...chartOpts.scales.y, min:20, max:90}}}
+});
+
+// VO2Max
+new Chart(document.getElementById('vo2Chart'), {
+  type:'line', data:{labels:D.vo2_dates.map(d=>d.slice(2)), datasets:[{data:D.vo2_vals, borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,0.1)', fill:true, tension:0.3, pointRadius:2, pointBackgroundColor:'#fbbf24'}]},
+  options:{...chartOpts, scales:{...chartOpts.scales, y:{...chartOpts.scales.y, min:25, max:40}, x:{...chartOpts.scales.x, ticks:{...chartOpts.scales.x.ticks, maxTicksToShow:12}}}}
+});
+
+// Sleep
+const sleepColors = D.sleep_90.map(v => v===0?'rgba(100,100,100,0.2)':v>=7?'rgba(167,139,250,0.7)':v>=6?'rgba(251,191,36,0.6)':'rgba(248,113,113,0.6)');
+new Chart(document.getElementById('sleepChart'), {
+  type:'bar', data:{labels:labels90, datasets:[{data:D.sleep_90.map(v=>v||null), backgroundColor:sleepColors, borderRadius:3}]},
+  options:{...chartOpts, plugins:{...chartOpts.plugins, tooltip:{callbacks:{label:c=>c.raw?`${c.raw}小时`:'无数据'}}}, scales:{...chartOpts.scales, y:{...chartOpts.scales.y, min:0, max:16}}}
+});
+
+// Monthly Steps
+new Chart(document.getElementById('monthStepsChart'), {
+  type:'bar', data:{labels:monthLabels, datasets:[{data:D.m_steps, backgroundColor:'rgba(79,140,255,0.6)', borderRadius:4}]},
+  options:{...chartOpts, scales:{...chartOpts.scales, y:{...chartOpts.scales.y, beginAtZero:true}}}
+});
+
+// Monthly Exercise
+new Chart(document.getElementById('monthExerciseChart'), {
+  type:'bar', data:{labels:monthLabels, datasets:[{data:D.m_exercise, backgroundColor:'rgba(52,211,153,0.6)', borderRadius:4}]},
+  options:{...chartOpts, scales:{...chartOpts.scales, y:{...chartOpts.scales.y, beginAtZero:true}}}
+});
+
+// Workout Pie
+const wtNames = Object.keys(D.workout_types);
+const wtLabels = {'Walking':'步行','Cycling':'骑行','Running':'跑步','Hiking':'徒步','HighIntensityIntervalTraining':'HIIT','Other':'其他','Soccer':'足球'};
+const pieColors = ['#34d399','#4f8cff','#f87171','#fbbf24','#f472b6','#a78bfa','#60a5fa'];
+new Chart(document.getElementById('workoutPie'), {
+  type:'doughnut', data:{labels:wtNames.map(n=>wtLabels[n]||n), datasets:[{data:wtNames.map(n=>D.workout_types[n].count), backgroundColor:pieColors}]},
+  options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right',labels:{color:'#aaa'}}}}
+});
+
+// Workout Duration Bar
+new Chart(document.getElementById('workoutBar'), {
+  type:'bar', data:{labels:wtNames.map(n=>wtLabels[n]||n), datasets:[{data:wtNames.map(n=>Math.round(D.workout_types[n].total_duration/60)), backgroundColor:pieColors, borderRadius:6}]},
+  options:{...chartOpts, indexAxis:'y', scales:{x:{ticks:{color:'#666'},grid:{color:'rgba(255,255,255,0.06)'}}, y:{ticks:{color:'#aaa'},grid:{display:false}}}}
+});
+
+// Activity Rings
+function drawRing(container, pct, color, label) {
+  const r = 50, c = 2*Math.PI*r;
+  const item = document.createElement('div');
+  item.className = 'ring-item';
+  item.innerHTML = `<div class="ring-circle"><svg width="120" height="120"><circle cx="60" cy="60" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/><circle cx="60" cy="60" r="${r}" fill="none" stroke="${color}" stroke-width="10" stroke-dasharray="${c*pct/100} ${c}" stroke-linecap="round"/></svg><div class="ring-pct" style="color:${color}">${pct}%</div></div><div style="color:var(--text2);font-size:0.9em">${label}</div>`;
+  container.appendChild(item);
+}
+const rc = D.ring_closure;
+const ringsEl = document.getElementById('rings');
+drawRing(ringsEl, Math.round(rc.move/rc.total*100), '#f87171', `运动环 (${rc.move}/${rc.total}天)`);
+drawRing(ringsEl, Math.round(rc.exercise/rc.total*100), '#34d399', `锻炼环 (${rc.exercise}/${rc.total}天)`);
+drawRing(ringsEl, Math.round(rc.stand/rc.total*100), '#4f8cff', `站立环 (${rc.stand}/${rc.total}天)`);
+
+// Recent Workouts Table
+const workouts = [
+  {date:'2026-03-27', type:'Walking', dur:21, note:'2次步行'},
+  {date:'2026-03-26', type:'Soccer', dur:43, note:'⚽ 踢球!'},
+  {date:'2026-03-26', type:'Walking', dur:91, note:'含81分钟长走'},
+  {date:'2026-03-25', type:'Walking', dur:30, note:'2次步行'},
+  {date:'2026-03-23', type:'Walking', dur:64, note:'4次步行'},
+  {date:'2026-03-22', type:'Walking', dur:36, note:''},
+  {date:'2026-03-21', type:'Walking', dur:55, note:'3次步行'},
+];
+const badgeClass = {Walking:'badge-walk', Cycling:'badge-cycle', Running:'badge-run', Hiking:'badge-hike', Soccer:'badge-other'};
+const typeLabel = {Walking:'步行', Cycling:'骑行', Running:'跑步', Hiking:'徒步', Soccer:'足球'};
+const tbody = workouts.map(w => `<tr><td>${w.date}</td><td><span class="badge ${badgeClass[w.type]||'badge-other'}">${typeLabel[w.type]||w.type}</span></td><td>${w.dur}分钟</td><td style="color:var(--text2)">${w.note}</td></tr>`).join('');
+document.getElementById('workoutTable').innerHTML = `<thead><tr><th>日期</th><th>类型</th><th>时长</th><th>备注</th></tr></thead><tbody>${tbody}</tbody>`;
+</script>
+</body>
+</html>
